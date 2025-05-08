@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node name="oakchina_vio" pkg="oakchina_vio_package" type="oakchina_vio_package_node" output="screen" required="true"></node>
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find oakchina_vio_package)/rviz/oakchina_vio.rviz" />
+</launch>

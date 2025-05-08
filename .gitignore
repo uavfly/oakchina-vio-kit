@@ -1,0 +1,8 @@
+# *.o
+.vscode
+build/
+
+.catkin_workspace
+build_isolated/
+devel_isolated/
+output/
