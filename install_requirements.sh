@@ -7,7 +7,6 @@ sudo apt install libboost-dev libboost-thread-dev libboost-filesystem-dev -y
 sudo apt install cmake -y
 sudo apt install build-essential -y
 
-sudo wget -qO- https://raw.githubusercontent.com/luxonis/depthai-ros/main/install_dependencies.sh | sudo bash
 sudo apt install python3-rosdep
 sudo rosdep init
 rosdep update
