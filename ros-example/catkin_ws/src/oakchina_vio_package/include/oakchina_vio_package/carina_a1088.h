@@ -4,10 +4,6 @@
 
 #ifndef CARINA_VIO_CARINA_A1088_H
 #define CARINA_VIO_CARINA_A1088_H
-#include <functional>
-#include <iostream>
-#include <string>
-#include <vector>
 
 #ifndef _MSC_VER
 #define CARINA_A1088_EXPORT __attribute__((visibility("default")))
@@ -20,45 +16,42 @@ extern "C" {
 #endif
 
 struct carina_orb_point {
-  int octave;
-  float angle;
-  float response;
-  float x;
-  float y;
-  unsigned char desc[32];
-  unsigned int id;
+    int octave;
+    float angle;
+    float response;
+    float x;
+    float y;
+    unsigned char desc[32];
+    unsigned int id;
 };
 
 struct carina_lk_point {
-  float x;
-  float y;
-  unsigned int id;
+    float x;
+    float y;
+    unsigned int id;
 };
 
 struct carina_points {
-  std::vector<std::vector<carina_lk_point>> points_lk;
-  std::vector<std::vector<carina_orb_point>> points_orb;
+    carina_lk_point **points_lk;
+    carina_orb_point **points_orb;
+    int points_lk_rows;
+    int points_lk_cols[4];
+    int points_orb_rows;
+    int points_orb_cols[4];
 };
 
 ///
-/// \param config yaml path
 /// \param custom_config yaml value
 /// \param vocab_file_path database.bin file path
 /// \param input(file_descriptor)，设备描述
 /// \param input(bus_num)，设备bus
 //// \param input(dev_addr)，设备地址
 /// \return 0:success other:fail
-CARINA_A1088_EXPORT int carina_a1088_init(const std::string &config,
-                                          const std::string &custom_config,
-                                          const std::string &vocab_file_path,
+CARINA_A1088_EXPORT int carina_a1088_init(char *custom_config,
+                                          char *vocab_file_path,
                                           int file_descriptor = -1,
-                                          int bus_num = -1, int dev_addr = -1);
-
-CARINA_A1088_EXPORT int carina_a1088_init_c(char *custom_config,
-                                            char *vocab_file_path,
-                                            int file_descriptor = -1,
-                                            int bus_num = -1,
-                                            int dev_addr = -1);
+                                          int bus_num = -1,
+                                          int dev_addr = -1);
 
 ///
 /// \param config yaml path
@@ -71,17 +64,11 @@ CARINA_A1088_EXPORT int carina_a1088_init_c(char *custom_config,
 /// \param input(bus_num_div)，副设备bus
 //// \param input(dev_addr_div)，副设备地址
 /// \return 0:success other:fail
-CARINA_A1088_EXPORT int carina_double_a1088_init(
-    const std::string &config, const std::string &custom_config,
-    const std::string &vocab_file_path, int file_descriptor_main = -1,
-    int bus_num_main = -1, int dev_addr_main = -1, int file_descriptor_div = -1,
-    int bus_num_div = -1, int dev_addr_div = -1);
-
 CARINA_A1088_EXPORT int
-carina_double_a1088_init_c(char *custom_config, char *vocab_file_path,
-                           int file_descriptor_main = -1, int bus_num_main = -1,
-                           int dev_addr_main = -1, int file_descriptor_div = -1,
-                           int bus_num_div = -1, int dev_addr_div = -1);
+carina_double_a1088_init(char *custom_config, char *vocab_file_path,
+                         int file_descriptor_main = -1, int bus_num_main = -1,
+                         int dev_addr_main = -1, int file_descriptor_div = -1,
+                         int bus_num_div = -1, int dev_addr_div = -1);
 
 ///
 /// pose_callback float[32] 0-15 twb(列存储)
@@ -90,31 +77,27 @@ carina_double_a1088_init_c(char *custom_config, char *vocab_file_path,
 /// imu_callback float[6] 0-2 acc 3-5 gyro, timestamp in monotime
 /// img_callback const char * left_img, const char * right_img, timestamp in
 /// monotime return 0:success other:fail
-CARINA_A1088_EXPORT int carina_a1088_start(
-    std::function<void(float *, double)> pose_callback,
-    std::function<void(double)> vsync_callback,
-    std::function<void(const std::vector<float> &, double)> imu_callback,
-    std::function<void(const char *, const char *, const char *, const char *,
-                       double, int w, int h)>
-        img_callback,
-    std::function<void(const carina_points &, double)> points_callback,
-    std::function<void(const uint8_t uc_event)> event_callback);
-
 typedef void (*CarinaA1088PoseCallBackType)(float *, double);
+
 typedef void (*CarinaA1088VsyncCallBackType)(double);
+
 typedef void (*CarinaA1088ImuCallBackType)(float *, double);
+
 typedef void (*CarinaA1088CameraCallBackType)(char *, char *,
                                               char *, char *,
                                               double, int w, int h);
+
 typedef void (*CarinaA1088PointsCallBackType)(carina_points &, double);
+
 typedef void (*CarinaA1088EventCallBackType)(unsigned char);
+
 CARINA_A1088_EXPORT int
-carina_a1088_start_c(CarinaA1088PoseCallBackType pose_callback,
-                     CarinaA1088VsyncCallBackType vsync_callback,
-                     CarinaA1088ImuCallBackType imu_callback,
-                     CarinaA1088CameraCallBackType img_callback,
-                     CarinaA1088PointsCallBackType points_callback,
-                     CarinaA1088EventCallBackType event_callback);
+carina_a1088_start(CarinaA1088PoseCallBackType pose_callback,
+                   CarinaA1088VsyncCallBackType vsync_callback,
+                   CarinaA1088ImuCallBackType imu_callback,
+                   CarinaA1088CameraCallBackType img_callback,
+                   CarinaA1088PointsCallBackType points_callback,
+                   CarinaA1088EventCallBackType event_callback);
 
 ///
 /// \return 0:success other:fail
@@ -132,25 +115,11 @@ CARINA_A1088_EXPORT int carina_a1088_pause();
 /// \return 0:success other:fail
 CARINA_A1088_EXPORT int carina_a1088_resume();
 
-///
-//// \param output(sn)
-/// \return 0:success other:fail
-CARINA_A1088_EXPORT int carina_a1088_get_sn(std::string &sn);
+/// \return success:sn , fail:null
+CARINA_A1088_EXPORT char *carina_a1088_get_sn();
 
-/// read sn, need to free memory by caller
-/// \param output(sn)
-/// \return success:sn length, fail:-1
-CARINA_A1088_EXPORT int carina_a1088_get_sn_c(char **sn);
-
-///
-//// \param output(cam_param)
-/// \return 0:success other:fail
-CARINA_A1088_EXPORT int carina_a1088_get_cam_param(std::string &cam_param);
-
-/// read camera parameters, need to free memory by caller
-/// \param output(cam_param)
-/// \return success:cam_param length, fail:-1
-CARINA_A1088_EXPORT int carina_a1088_get_cam_param_c(char **cam_param);
+/// \return success:cam_param, fail:null
+CARINA_A1088_EXPORT char *carina_a1088_get_cam_param();
 
 ///
 /// \param pose twb  列存储 size 16
@@ -175,9 +144,7 @@ CARINA_A1088_EXPORT int carina_a1088_send_custom_data(const char *wdata,
 /// 读取USB数据,需要初始化主设备USB接口
 /// \param ilen 需要读取的数据长度 [min:32,max：usb2.0:512 usb3.0:1024]
 /// \return 读取到的数据
-CARINA_A1088_EXPORT const std::string &carina_a1088_read_custom_data(int ilen);
-
-CARINA_A1088_EXPORT char *carina_a1088_read_custom_data_c(int ilen);
+CARINA_A1088_EXPORT char *carina_a1088_read_custom_data(int ilen);
 
 /// 切换显示模式
 /// \param imode 0：2D 1:3D
@@ -187,6 +154,18 @@ CARINA_A1088_EXPORT int carina_a1088_switch_display_mode(const unsigned char imo
 ///
 /// \return 0:success other:fail
 CARINA_A1088_EXPORT int carina_a1088_reset_pose();
+
+///
+/// \return 0:success other:fail
+CARINA_A1088_EXPORT char *carina_a1088_get_sdk_version();
+
+///
+/// \return 0:success other:fail
+CARINA_A1088_EXPORT char *carina_a1088_get_firmware_version();
+
+///
+/// \return 0:success other:fail
+CARINA_A1088_EXPORT int carina_a1088_set_low_power_mode(const bool &b_low_power);
 
 #ifdef __cplusplus
 }

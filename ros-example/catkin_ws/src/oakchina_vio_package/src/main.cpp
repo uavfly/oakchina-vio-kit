@@ -22,6 +22,31 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
+std::mutex image_mtx;
+cv::Mat left_image;
+cv::Mat right_image;
+cv::Mat left_image1;
+cv::Mat right_image1;
+double image_ts = -1;
+
+std::mutex imu_mtx;
+std::vector<float> imu_data;
+double imu_ts = -1;
+
+std::mutex vsync_mtx;
+double vsync_ts = -1;
+
+std::mutex pose_mtx;
+float pose_data[32] = {0,};
+double pose_ts = -1;
+
+std::mutex points_mtx;
+carina_points points_data;
+double points_ts = -1;
+
+std::mutex event_mtx;
+unsigned char event = 0;
+
 void signal_handle(int signal){
 	if(SIGINT == signal){
 		carina_a1088_pause();
@@ -83,34 +108,102 @@ tf2::Quaternion rotationMatrixToQuaternion(const double* R) {
     return q;
 }
 
+void CarinaA1088PoseCallBack(float *pose, double ts) {
+    std::lock_guard<std::mutex> auto_lock(pose_mtx);
+    memcpy(pose_data, pose, sizeof(float) * 32);
+    pose_ts = ts;
+}
+
+void CarinaA1088VsyncCallBack(double ts) {
+    std::lock_guard<std::mutex> auto_lock(vsync_mtx);
+    vsync_ts = ts;
+}
+
+void CarinaA1088ImuCallBack(float *imu, double ts) {
+    std::lock_guard<std::mutex> auto_lock(imu_mtx);
+    if (imu != nullptr) {
+        imu_data.resize(6);
+        for (int i = 0; i < 6; i++) {
+            imu_data[i] = imu[i];
+        }
+    }
+    imu_ts = ts;
+}
+
+void CarinaA1088CameraCallBack(char *left, char *right, char *left1, char *right1, double ts, int w, int h) {
+    std::lock_guard<std::mutex> auto_lock(image_mtx);
+    if (left != nullptr) {
+        left_image = cv::Mat(h, w, CV_8UC1);
+        memcpy(left_image.data, left, w * h);
+    }
+    if (right != nullptr) {
+        right_image = cv::Mat(h, w, CV_8UC1);
+        memcpy(right_image.data, right, w * h);
+    }
+    if (left1 != nullptr) {
+        left_image1 = cv::Mat(h, w, CV_8UC1);
+        memcpy(left_image1.data, left1, w * h);
+    }
+    if (right1 != nullptr) {
+        right_image1 = cv::Mat(h, w, CV_8UC1);
+        memcpy(right_image1.data, right1, w * h);
+    }
+    image_ts = ts;
+}
+
+void CarinaA1088PointsCallBack(carina_points &points, double ts) {
+    std::lock_guard<std::mutex> auto_lock(points_mtx);
+    for (int i = 0; i < points_data.points_lk_rows; ++i) {
+        delete[] points_data.points_lk[i];
+    }
+    delete[] points_data.points_lk;
+    for (int i = 0; i < points_data.points_orb_rows; ++i) {
+        delete[] points_data.points_orb[i];
+    }
+    delete[] points_data.points_orb;
+    points_data.points_lk_rows = points.points_lk_rows;
+    points_data.points_orb_rows = points.points_orb_rows;
+
+    points_data.points_lk = new carina_lk_point *[points_data.points_lk_rows];
+    for (int i = 0; i < points_data.points_lk_rows; ++i) {
+        points_data.points_lk_cols[i] = points.points_lk_cols[i];
+        points_data.points_lk[i] = new carina_lk_point[points_data.points_lk_cols[i]];
+        for (int j = 0; j < points_data.points_lk_cols[i]; ++j) {
+            points_data.points_lk[i][j].id = points.points_lk[i][j].id;
+            points_data.points_lk[i][j].x = points.points_lk[i][j].x;
+            points_data.points_lk[i][j].y = points.points_lk[i][j].y;
+        }
+    }
+
+    points_data.points_orb = new carina_orb_point *[points_data.points_orb_rows];
+    for (int i = 0; i < points_data.points_orb_rows; ++i) {
+        points_data.points_orb_cols[i] = points.points_orb_cols[i];
+        points_data.points_orb[i] = new carina_orb_point[points_data.points_orb_cols[i]];
+        for (int j = 0; j < points_data.points_orb_cols[i]; ++j) {
+            points_data.points_orb[i][j].id = points.points_orb[i][j].id;
+            points_data.points_orb[i][j].x = points.points_orb[i][j].x;
+            points_data.points_orb[i][j].y = points.points_orb[i][j].y;
+            points_data.points_orb[i][j].angle = points.points_orb[i][j].angle;
+            points_data.points_orb[i][j].octave = points.points_orb[i][j].octave;
+            points_data.points_orb[i][j].response = points.points_orb[i][j].response;
+            for (int k = 0; k < 32; ++k) {
+                points_data.points_orb[i][j].desc[k] = points.points_orb[i][j].desc[k];
+            }
+        }
+    }
+    points_ts = ts;
+}
+
+void CarinaA1088EventCallBack(const uint8_t uc_event) {
+    std::lock_guard<std::mutex> auto_lock(event_mtx);
+    event = uc_event;
+}
+
 int main(int argc, char **argv) {
 
     signal(SIGINT,signal_handle);
 
     char c;
-    std::mutex image_mtx;
-    double image_ts = -1;
-    uint8_t *left_image = NULL;
-    uint8_t *right_image = NULL;
-    uint32_t width = 0, height = 0;
-
-    std::mutex imu_mtx;
-    std::vector<float> imu_data;
-    double imu_ts = -1;
-
-    std::mutex vsync_mtx;
-    double vsync_ts = -1;
-
-    std::mutex pose_mtx;
-    float pose_data[32] = {0,};
-    double pose_ts = -1;
-
-    std::mutex points_mtx;
-    carina_points points_data;
-    double points_ts = -1;
-
-    std::mutex event_mtx;
-    unsigned char event = 0;
 
     std::string custom_config_path = "./custom_config.yaml";
     std::string custom_config;
@@ -122,40 +215,15 @@ int main(int argc, char **argv) {
         custom_config = buffer.str();
     }
 
-    carina_a1088_init("", custom_config, "./database.bin");
+    carina_a1088_init(const_cast<char *>(custom_config.c_str()), "./database.bin");
     carina_a1088_start(
-            [&](float *pose, double ts) {
-                std::lock_guard<std::mutex> auto_lock(pose_mtx);
-                memcpy(pose_data, pose, sizeof(float) * 32);
-                pose_ts = ts;
-            },
-            [&](double ts) {
-                std::lock_guard<std::mutex> auto_lock(vsync_mtx);
-                vsync_ts = ts;
-            },
-            [&](const std::vector<float> &imu, double ts) {
-                std::lock_guard<std::mutex> auto_lock(imu_mtx);
-                // imu_data = imu;
-                imu_ts = ts;
-            },
-            [&](const char *left, const char *right, const char *left1, const char *right1, double ts, int w, int h) {
-                std::lock_guard<std::mutex> auto_lock(image_mtx);
-                left_image = (uint8_t*)left;
-                right_image = (uint8_t*)right;
-                width = w;
-                height = h;
-                image_ts = ts;
-            },
-            [&](const carina_points &points, double ts) {
-                std::lock_guard<std::mutex> auto_lock(points_mtx);
-                points_data.points_lk = points.points_lk;
-                points_data.points_orb = points.points_orb;
-                points_ts = ts;
-            },
-            [&](const uint8_t uc_event) {
-                std::lock_guard<std::mutex> auto_lock(event_mtx);
-                event = uc_event;
-            });
+        CarinaA1088PoseCallBack,
+        CarinaA1088VsyncCallBack,
+        CarinaA1088ImuCallBack,
+        CarinaA1088CameraCallBack,
+        CarinaA1088PointsCallBack,
+        CarinaA1088EventCallBack
+    );
     carina_a1088_resume();
 
     ros::init(argc, argv, "vio");
@@ -209,10 +277,16 @@ int main(int argc, char **argv) {
 
                 outFile << "position: " << pose_data[12] << "," << pose_data[13] << "," << pose_data[14] << "\n";
 
+                // double R[9] = {
+                //     pose_data[0], pose_data[1], pose_data[2],
+                //     pose_data[4], pose_data[5], pose_data[6],
+                //     pose_data[8], pose_data[9], pose_data[10]
+                // };
+
                 double R[9] = {
-                    pose_data[0], pose_data[1], pose_data[2],
-                    pose_data[4], pose_data[5], pose_data[6],
-                    pose_data[8], pose_data[9], pose_data[10]
+                    pose_data[0], pose_data[4], pose_data[8],
+                    pose_data[1], pose_data[5], pose_data[9],
+                    pose_data[2], pose_data[6], pose_data[10]
                 };
 
                 outFile << "rotation matrix: ";
@@ -269,37 +343,37 @@ int main(int argc, char **argv) {
             }
         }
 
-        {
-            std::lock_guard<std::mutex> auto_lock(vsync_mtx);
-            if (vsync_ts > 0) {
-                std::cout << "vsync ts: " << vsync_ts << std::endl;
-                vsync_ts = -1;
-            }
-        }
+        // {
+        //     std::lock_guard<std::mutex> auto_lock(vsync_mtx);
+        //     if (vsync_ts > 0) {
+        //         std::cout << "vsync ts: " << vsync_ts << std::endl;
+        //         vsync_ts = -1;
+        //     }
+        // }
 
-        {
-            std::lock_guard<std::mutex> auto_lock(points_mtx);
-            if (points_ts > 0) {
-                std::cout << "points ts: " << points_ts << " data: " << points_data.points_orb.size() << "\t"
-                          << points_data.points_lk.size() << std::endl;
+        // {
+        //     std::lock_guard<std::mutex> auto_lock(points_mtx);
+        //     if (points_ts > 0) {
+        //         std::cout << "points ts: " << points_ts << " data: " << points_data.points_orb.size() << "\t"
+        //                   << points_data.points_lk.size() << std::endl;
 
-                points_ts = -1;
-            }
-        }
+        //         points_ts = -1;
+        //     }
+        // }
 
         {
             std::lock_guard<std::mutex> auto_lock(image_mtx);
-            if (image_ts > 0 && left_image && right_image) {
+            if (image_ts > 0) {
                 std::cout << "image_ts ts: " << image_ts << std::endl;
-                cv::Mat left_img(height, width, CV_8UC1, left_image);
-                left_msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", left_img).toImageMsg();
-                cv::Mat right_img(height, width, CV_8UC1, right_image);
-                right_msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", right_img).toImageMsg();
+                // cv::Mat left_img(height, width, CV_8UC1, left_image);
+                left_msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", left_image).toImageMsg();
+                // cv::Mat right_img(height, width, CV_8UC1, right_image);
+                right_msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", right_image).toImageMsg();
                 left_image_pub.publish(left_msg);
                 right_image_pub.publish(right_msg);
                 image_ts = -1;
-                left_image = NULL;
-                right_image = NULL;
+                // left_image = NULL;
+                // right_image = NULL;
             }
         }
 
