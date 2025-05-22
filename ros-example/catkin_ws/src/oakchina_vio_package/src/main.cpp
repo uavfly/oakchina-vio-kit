@@ -171,6 +171,23 @@ int main(int argc, char **argv) {
     nav_msgs::Path path;
     path.header.frame_id = "map";
 
+    
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::tm now_tm = *std::localtime(&now_time_t);
+    std::ostringstream timestamp;
+    timestamp << std::put_time(&now_tm, "%Y%m%d_%H%M%S");
+    
+    std::string file_path = timestamp.str() + "_VIO_6DOF_data.txt";
+
+    std::ofstream outFile;
+    outFile.open(file_path);
+    
+    if (!outFile.is_open()) {
+        std::cerr << "Unable to open file!" << std::endl;
+        return 1;
+    }
+
     while (ros::ok()) {
         sensor_msgs::Imu imu_msg;
         geometry_msgs::PoseStamped pose_stamped;
@@ -190,11 +207,23 @@ int main(int argc, char **argv) {
                 // }
                 // std::cout << std::endl;
 
+                outFile << "position: " << pose_data[12] << "," << pose_data[13] << "," << pose_data[14] << "\n";
+
                 double R[9] = {
                     pose_data[0], pose_data[1], pose_data[2],
                     pose_data[4], pose_data[5], pose_data[6],
                     pose_data[8], pose_data[9], pose_data[10]
                 };
+
+                outFile << "rotation matrix: ";
+                for (size_t i = 0; i < 9; i++)
+                {
+                    if (i == 8)
+                        outFile << R[i];
+                    else
+                        outFile << R[i] << ",";
+                }
+                outFile << "\n";
 
                 quat = rotationMatrixToQuaternion(R);
                 pose_stamped.header.stamp = ros::Time::now();
@@ -206,6 +235,8 @@ int main(int argc, char **argv) {
                 pose_stamped.pose.orientation.y = quat.y();
                 pose_stamped.pose.orientation.z = quat.z();
                 pose_stamped.pose.orientation.w = quat.w();
+
+                outFile << "orientation: " << quat.x() << "," << quat.y() << "," << quat.z() << "," << quat.w() << "\n\n";
 
                 path.poses.push_back(pose_stamped);
                 path.header.stamp = ros::Time::now(); // 更新时间戳
@@ -288,6 +319,8 @@ int main(int argc, char **argv) {
                 break;
         }
     }
+
+    outFile.close();
 
     carina_a1088_pause();
     carina_a1088_stop();
