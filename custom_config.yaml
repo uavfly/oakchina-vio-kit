@@ -6,3 +6,6 @@ save_data: false
 orb_database_path: ./database.bin
 save_trajectory: true
 data_saved_path: ./output
+auto_exposure: false
+exposure_time: 4.0
+exposure_gain: 2
