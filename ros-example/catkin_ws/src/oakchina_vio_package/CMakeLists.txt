@@ -124,7 +124,12 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-link_directories(lib)
+message(STATUS "System processor: ${CMAKE_SYSTEM_PROCESSOR}")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  link_directories(lib/x86_64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64")
+  link_directories(lib/aarch64)
+endif()
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
