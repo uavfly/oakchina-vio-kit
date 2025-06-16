@@ -168,6 +168,7 @@ target_link_libraries(${PROJECT_NAME}_node
   liblk.a
   libtracker.a
   libyaml-cpp.a
+  libfpga_orb.a
   ${OpenCV_LIBS}
 )
 

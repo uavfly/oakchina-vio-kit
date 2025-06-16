@@ -26,6 +26,7 @@ target_link_libraries(${APP_NAME}
     liblk.a
     libtracker.a
     libyaml-cpp.a
+    libfpga_orb.a
     ${OpenCV_LIBS}
 )
 
