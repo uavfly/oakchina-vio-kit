@@ -54,14 +54,53 @@ echo "✅ 示例程序构建完成"
 # --------------------------
 # 3. 构建 ROS 示例
 # --------------------------
-echo "🚀 开始构建 ROS 示例 ..."
-ROS_WS_DIR="ros-example/catkin_ws"
-cd "$ROS_WS_DIR" || { echo "❌ 找不到 ROS 工作空间目录: $ROS_WS_DIR"; exit 1; }
 
-echo "  安装 ROS 依赖 ..."
-rosdep install --from-paths src --ignore-src -r -y
-echo "  执行 catkin_make_isolated ..."
-catkin_make_isolated -j$(nproc)
+build_ros1_example() {
+    ROS_WS_DIR="ros-example/catkin_ws"
+    cd "$ROS_WS_DIR" || { echo "❌ 找不到 ROS 工作空间目录: $ROS_WS_DIR"; exit 1; }
+
+    echo "  安装 ROS 依赖 ..."
+    rosdep install --from-paths src --ignore-src -r -y
+    echo "  执行 catkin_make_isolated ..."
+    catkin_make_isolated -j$(nproc)
+}
+
+build_ros2_example() {
+    ROS_WS_DIR="ros-example/oakchina_vio_package_ros2"
+    cd "$ROS_WS_DIR" || { echo "❌ 找不到 ROS2 工作空间目录: $ROS_WS_DIR"; exit 1; }
+
+    echo "  安装 ROS 依赖 ..."
+    rosdep init
+    rosdep update
+    rosdep install --from-paths src --ignore-src -r -y
+    echo "  执行 colcon build ..."
+    colcon build --symlink-install
+}
+
+echo "🚀 开始构建 ROS 示例 ..."
+if [ -f /etc/os-release ]; then
+    source /etc/os-release
+    if [ "$ID" = "ubuntu" ]; then
+        case "$VERSION_ID" in
+            "20.04")
+                echo "This is Ubuntu 20.04 (Focal Fossa)"
+                build_ros1_example
+                ;;
+            "22.04")
+                echo "This is Ubuntu 22.04 (Jammy Jellyfish)"
+                build_ros2_example
+                ;;
+            *)
+                echo "This is Ubuntu, but not 20.04 or 22.04"
+                ;;
+        esac
+    else
+        echo "This is not Ubuntu"
+    fi
+else
+    echo "Cannot determine OS (no /etc/os-release)"
+fi
+
 cd "$SCRIPT_DIR"  # 返回项目根目录
 echo "✅ ROS 示例构建完成"
 

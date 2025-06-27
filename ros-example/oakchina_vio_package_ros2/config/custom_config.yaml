@@ -1,0 +1,11 @@
+mapping_mode: false
+cloud_mapping: false
+server.address: 192.168.0.172:50072
+histogram_method: none
+save_data: false
+orb_database_path: ./database.bin
+save_trajectory: true
+data_saved_path: ./output
+auto_exposure: false
+exposure_time: 4.0
+exposure_gain: 2

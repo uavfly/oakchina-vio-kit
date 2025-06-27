@@ -6,3 +6,5 @@ build/
 build_isolated/
 devel_isolated/
 output/
+install/
+log/

@@ -16,8 +16,10 @@
 ## 🖥️ 支持平台
 | 环境         | 版本               | 
 |--------------|--------------------|
-| **操作系统** | Ubuntu 20.04 LTS   | 
+| **操作系统**  | Ubuntu 20.04 LTS   | 
+| **操作系统**  | Ubuntu 22.04 LTS   | 
 | **ROS**      | Noetic Ninjemys    | 
+| **ROS2**     | Humble Hawksbill  |
 
 ---
 
@@ -43,6 +45,16 @@ chmod +x install_requirements.sh
 
 ### 2. 构建项目
 ```bash
+# 在Ubuntu22.04系统上，需要手动编译opencv v4.2
+git clone --branch 4.2.0 https://github.com/opencv/opencv.git
+sudo apt-get install python3-dev python3-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev
+cd opencv
+cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -Bbuild  -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF -DBUILD_opencv_apps=OFF .
+sudo cmake --build build --target install
+```
+```bash
+source /opt/ros/noetic/setup.bash          # 加载基础 ROS 环境
+source /opt/ros/humble/setup.bash          # 加载基础 ROS2 环境
 chmod +x build.sh
 ./build.sh  # 编译主程序及 ROS 功能包
 ```
@@ -68,6 +80,16 @@ echo $ROS_PACKAGE_PATH | grep "oakchina_vio_package"  # 应显示项目路径
 roslaunch oakchina_vio_package oakchina_vio.launch
 ```
 
+#### ROS2 模式
+```bash
+cd ros-example/oakchina_vio_package_ros2
+
+# 激活 ROS 环境（每个新终端都需要执行）
+source /opt/ros/humble/setup.bash          # 加载基础 ROS 环境
+source install/setup.bash                  # 加载项目 ROS2 环境
+
+ros2 launch oakchina_vio_package oakchina_vio.launch.py
+```
 ---
 
 ## 🐳 Docker 运行
@@ -92,6 +114,8 @@ docker run -it --privileged \
 
 ### 3. 构建项目
 ```bash
+source /opt/ros/noetic/setup.bash          # 加载基础 ROS 环境
+source /opt/ros/humble/setup.bash          # 加载基础 ROS2 环境
 # 构建项目（同本地）
 chmod +x build.sh
 ./build.sh
@@ -115,6 +139,20 @@ echo $ROS_PACKAGE_PATH | grep "oakchina_vio_package"  # 应显示项目路径
 # 启动 VIO 节点
 roslaunch oakchina_vio_package oakchina_vio.launch
 ```
+#### ROS2 模式
+```bash
+cd ros-example/oakchina_vio_package_ros2
+
+# 激活 ROS 环境（每个新终端都需要执行）
+source /opt/ros/humble/setup.bash          # 加载基础 ROS 环境
+source install/setup.bash           # 加载项目 ROS 环境
+
+# 验证环境变量
+echo $ROS_PACKAGE_PATH | grep "oakchina_vio_package"  # 应显示项目路径
+
+# 启动 VIO 节点
+roslaunch oakchina_vio_package oakchina_vio.launch
+```
 ---
 
 ## ⚠️ 注意事项
@@ -131,3 +169,8 @@ roslaunch oakchina_vio_package oakchina_vio.launch
 ### 性能优化
 - 在 `custom_config.yaml` 中调整图像分辨率和帧率。
 - Docker 模式下建议分配至少 4GB 内存。
+
+## 贡献者
+| 项目                             | 贡献者                                                    | 
+|--------------------------------- |----------------------------------------------------------|
+| oakchina_vio_package_ros2       | <a href="https://github.com/uavfly">StrangeFly</a> |
