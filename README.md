@@ -1,8 +1,8 @@
 # OAKChina-vio 
 
-视觉惯性里程计（VIO）示例项目，支持 **本地环境** 和 **Docker 容器** 快速部署。
-本人oakchina-vio-kit Ubuntu22.04以及ROS2-Humble适配第一作者（已授权官方使用）。
-官方Gitee地址：https://gitee.com/oakchina/oakchina-vio
+* 视觉惯性里程计（VIO）示例项目，支持 **本地环境** 和 **Docker 容器** 快速部署。
+* 本人oakchina-vio-kit Ubuntu22.04以及ROS2-Humble适配第一作者（已授权官方使用）。
+* 官方Gitee地址：https://gitee.com/oakchina/oakchina-vio
 
 ---
 
