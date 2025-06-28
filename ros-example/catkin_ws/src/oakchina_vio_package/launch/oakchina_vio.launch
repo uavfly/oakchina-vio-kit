@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-    <node name="oakchina_vio" pkg="oakchina_vio_package" type="oakchina_vio_package_node" output="screen" required="true">
-        <param name="custom_config_path" value="$(find oakchina_vio_package)/config/custom_config.yaml"></param>
-        <param name="database_path" value="$(find oakchina_vio_package)/config/database.bin"></param>
-    </node>
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find oakchina_vio_package)/rviz/oakchina_vio.rviz" />
-</launch>
