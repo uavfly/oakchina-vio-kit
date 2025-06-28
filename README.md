@@ -1,6 +1,8 @@
 # OAKChina-vio 
 
 视觉惯性里程计（VIO）示例项目，支持 **本地环境** 和 **Docker 容器** 快速部署。
+本人oakchina-vio-kit Ubuntu22.04以及ROS2-Humble适配第一作者（已授权官方使用）。
+官方Gitee地址：https://gitee.com/oakchina/oakchina-vio
 
 ---
 
@@ -44,6 +46,14 @@ chmod +x install_requirements.sh
 ```
 
 ### 2. 构建项目
+
+####
+* Tips! : Update 2025.06.29 更新后opencv4.2.0相关头文件以及动态链接库已经被包含于项目中，因此不再需要手动编译opencv4.2.0！
+* 此项目已经在X86（Intel I3-N305、I7-12700H）以及AARCH64（Rockchip RK3588）平台上测试通过（均为Ubuntu22.04 + Ros2 Humble Hawksbill 系统），理论上支持所有x86_64以及aarch64架构的平台。
+####
+
+<del>
+
 ```bash
 # 在Ubuntu22.04系统上，需要手动编译opencv v4.2
 git clone --branch 4.2.0 https://github.com/opencv/opencv.git
@@ -52,6 +62,11 @@ cd opencv
 cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -Bbuild  -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF -DBUILD_opencv_apps=OFF .
 sudo cmake --build build --target install
 ```
+
+</del>
+
+编译ROS功能包之前请确保已经正确加载相关ROS环境。
+
 ```bash
 source /opt/ros/noetic/setup.bash          # 加载基础 ROS 环境
 source /opt/ros/humble/setup.bash          # 加载基础 ROS2 环境
