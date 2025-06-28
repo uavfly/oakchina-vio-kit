@@ -185,7 +185,3 @@ roslaunch oakchina_vio_package oakchina_vio.launch
 - 在 `custom_config.yaml` 中调整图像分辨率和帧率。
 - Docker 模式下建议分配至少 4GB 内存。
 
-## 贡献者
-| 项目                             | 贡献者                                                    | 
-|--------------------------------- |----------------------------------------------------------|
-| oakchina_vio_package_ros2       | <a href="https://github.com/uavfly">StrangeFly</a> |
